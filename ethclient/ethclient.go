@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum"
+	ethereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -118,16 +118,16 @@ func (ec *Client) getBlock(ctx context.Context, method string, args ...interface
 		return nil, err
 	}
 	// Quick-verify transaction and uncle lists. This mostly helps with debugging the server.
-	if head.UncleHash == types.EmptyUncleHash && len(body.UncleHashes) > 0 {
+	if (head.UncleHash == types.EmptyUncleHash || head.UncleHash == common.Hash{}) && len(body.UncleHashes) > 0 {
 		return nil, fmt.Errorf("server returned non-empty uncle list but block header indicates no uncles")
 	}
-	if head.UncleHash != types.EmptyUncleHash && len(body.UncleHashes) == 0 {
+	if (head.UncleHash != types.EmptyUncleHash && head.UncleHash == common.Hash{}) && len(body.UncleHashes) == 0 {
 		return nil, fmt.Errorf("server returned empty uncle list but block header indicates uncles")
 	}
-	if head.TxHash == types.EmptyRootHash && len(body.Transactions) > 0 {
+	if (head.TxHash == types.EmptyRootHash || head.UncleHash == common.Hash{}) && len(body.Transactions) > 0 {
 		return nil, fmt.Errorf("server returned non-empty transaction list but block header indicates no transactions")
 	}
-	if head.TxHash != types.EmptyRootHash && len(body.Transactions) == 0 {
+	if (head.TxHash != types.EmptyRootHash && head.UncleHash == common.Hash{}) && len(body.Transactions) == 0 {
 		return nil, fmt.Errorf("server returned empty transaction list but block header indicates transactions")
 	}
 	// Load uncles because they are not included in the block response.
@@ -161,8 +161,11 @@ func (ec *Client) getBlock(ctx context.Context, method string, args ...interface
 			setSenderFromServer(tx.tx, *tx.From, body.Hash)
 		}
 		txs[i] = tx.tx
+		txs[i].StoreHash(*tx.txExtraInfo.Hash)
 	}
-	return types.NewBlockWithHeader(head).WithBody(txs, uncles), nil
+	block := types.NewBlockWithHeader(head).WithBody(txs, uncles)
+	block.StoreHash(body.Hash)
+	return block, nil
 }
 
 // HeaderByHash returns the block header with the given hash.
@@ -195,6 +198,7 @@ type txExtraInfo struct {
 	BlockNumber *string         `json:"blockNumber,omitempty"`
 	BlockHash   *common.Hash    `json:"blockHash,omitempty"`
 	From        *common.Address `json:"from,omitempty"`
+	Hash        *common.Hash    `json:"hash"`
 }
 
 func (tx *rpcTransaction) UnmarshalJSON(msg []byte) error {
