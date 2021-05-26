@@ -345,6 +345,11 @@ func (tx *Transaction) Hash() common.Hash {
 	return h
 }
 
+// StoreHash stores the transaction hash.
+func (tx *Transaction) StoreHash(h common.Hash) {
+	tx.hash.Store(h)
+}
+
 // Size returns the true RLP encoded storage size of the transaction, either by
 // encoding and returning it, or returning a previously cached value.
 func (tx *Transaction) Size() common.StorageSize {

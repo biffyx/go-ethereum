@@ -377,4 +377,10 @@ func (b *Block) Hash() common.Hash {
 	return v
 }
 
+// StoreHash returns store the keccak256 hash of b's header.
+// The hash is cached after call this.
+func (b *Block) StoreHash(h common.Hash) {
+	b.hash.Store(h)
+}
+
 type Blocks []*Block
