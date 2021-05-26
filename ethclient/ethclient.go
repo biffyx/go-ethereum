@@ -121,13 +121,13 @@ func (ec *Client) getBlock(ctx context.Context, method string, args ...interface
 	if (head.UncleHash == types.EmptyUncleHash || head.UncleHash == common.Hash{}) && len(body.UncleHashes) > 0 {
 		return nil, fmt.Errorf("server returned non-empty uncle list but block header indicates no uncles")
 	}
-	if (head.UncleHash != types.EmptyUncleHash && head.UncleHash == common.Hash{}) && len(body.UncleHashes) == 0 {
+	if (head.UncleHash != types.EmptyUncleHash && head.UncleHash != common.Hash{}) && len(body.UncleHashes) == 0 {
 		return nil, fmt.Errorf("server returned empty uncle list but block header indicates uncles")
 	}
 	if (head.TxHash == types.EmptyRootHash || head.UncleHash == common.Hash{}) && len(body.Transactions) > 0 {
 		return nil, fmt.Errorf("server returned non-empty transaction list but block header indicates no transactions")
 	}
-	if (head.TxHash != types.EmptyRootHash && head.UncleHash == common.Hash{}) && len(body.Transactions) == 0 {
+	if (head.TxHash != types.EmptyRootHash && head.UncleHash != common.Hash{}) && len(body.Transactions) == 0 {
 		return nil, fmt.Errorf("server returned empty transaction list but block header indicates transactions")
 	}
 	// Load uncles because they are not included in the block response.
